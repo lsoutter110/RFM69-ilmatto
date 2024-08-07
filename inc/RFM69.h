@@ -27,68 +27,41 @@
 
 // **********************************************************************************
 // Converted to AVR environment by Zulkar Nayem
+// Modified by Willow Herring
 // **********************************************************************************
 
 #include <avr/io.h>
 
-#ifndef RFM69_h
-#define RFM69_h
+#ifndef RFM69_H
+#define RFM69_H
 
-// Definitions
-//Definition below for Atmega644p(Il Matto Board)
-#   define SS_PORT              PORTB
-#   define SS_PIN                 PB4
+// Pin definitions for the ELEC3227 Breakout board
+#define SS_PORT              PORTB
+#define SS_PIN                 PB4
 
-#   define INT_DDR               DDRB
-#   define SS_DDR                DDRB
-#   define INT_PORT             PORTB
-#   define INT_PIN               PINB
-#   define INT_pin_num              2
-#   define INT_PIN_n              PB2
-#   define INTn                  INT2
-#   define ISCn0                ISC20
-#   define ISCn1                ISC21
-#   define INT_VECT         INT2_vect
+#define INT_DDR               DDRB
+#define SS_DDR                DDRB
+#define INT_PORT             PORTB
+#define INT_PIN               PINB
 
-#   define EICRn               EICRA
+// If using legacy EXT interrupt
+//#define INT_pin_num              2
+//#define INT_PIN_n              PB2
+//#define EXTERNAL_INTERRUPT
+//#define INTn                  INT2
+//#define ISCn0                ISC20
+//#define ISCn1                ISC21
+//#define INT_VECT         INT2_vect
+//
+//#define EICRn               EICRA
 
-/*
-#elif defined (__AVR_ATmega64__)
-#   define SS_DDR                DDRB
-#   define SS_PORT              PORTB
-#   define SS_PIN                 PB0
-
-#   define INT_DDR               DDRE
-#   define INT_PORT             PORTE
-#   define INT_PIN               PINE
-#   define INT_pin_num              5
-#   define INT_PIN_n              PE5
-#   define INTn                  INT5
-#   define ISCn0                ISC50
-#   define ISCn1                ISC51
-#   define INT_VECT         INT5_vect
-
-#   define EICRn               EICRB
-
-#elif defined(__AVR_ATtiny84A__)
-#   define SS_DDR                DDRA
-#   define SS_PORT              PORTA
-#   define SS_PIN               PINA3
- 
-#   define INT_DDR               DDRB
-#   define INT_PORT             PORTB
-#   define INT_PIN               PINB
-#   define INT_pin_num              2
-#   define INT_PIN_n            PINB2
-#   define INTn                  INT0
-#   define ISCn0                ISC00
-#   define ISCn1                ISC01
-#   define INT_VECT     EXT_INT0_vect
- 
-#   define EICRn               MCUCR
-#endif
-
-*/
+#define INT_pin_num              0
+#define INT_PIN_n              PB0
+#define PIN_CHANGE_INTERRUPT
+#define PCINTn PCINT7
+#define PCMSKn PCMSK1
+#define PCIEn PCIE1
+#define INT_VECT         PCINT1_vect
 
 
 

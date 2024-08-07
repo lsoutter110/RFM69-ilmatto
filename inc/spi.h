@@ -24,32 +24,14 @@
     $Id$
 */
 
-#ifndef SPI_h
-#define SPI_h
+#ifndef SPI_H
+#define SPI_H
 
-//#if defined (__AVR_ATmega328__) || defined (__AVR_ATmega328P__)
-//Definitions below for ATmega644p
-    #define SPI_DDR   DDRB
-    #define MISO         6
-    #define MOSI         5
-    #define SCK          7
-    #define SS           4
-
-/*
-#elif defined (__AVR_ATmega64__)
-    #define SPI_DDR   DDRB
-    #define MISO         3
-    #define MOSI         2
-    #define SCK          1
-    #define SS           0
-
-#elif defined(__AVR_ATtiny84A__)
-    #define SPI_DDR   DDRA
-    #define MISO         5
-    #define MOSI         6
-    #define SCK          4
-    #define SS           3
-#endif*/
+#define SPI_DDR   DDRB
+#define MISO         6
+#define MOSI         5
+#define SCK          7
+#define SS           4
 
 void spi_init();
 void spi_transfer_sync (uint8_t * dataout, uint8_t * datain, uint8_t len);

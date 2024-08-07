@@ -28,6 +28,7 @@
 // *************************************************************************
 // Converted to AVR environment by Zulkar Nayem
 // Modified by Jonathan Goh Yeh Wei for ELEC3227 Embedded Networked Systems
+// Further modified by Willow Herring
 // *************************************************************************
 
 
@@ -35,13 +36,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "spi.h"
-#include "spi.c"
 #include "RFM69registers.h"
 #include "RFM69.h"
-#include "get_millis.h"
-#include "get_millis.c"
-#include "UART.h"
-#include "UART.c"
+#include "millis.h"
+#include <stdio.h>
+
+
 
 volatile uint8_t DATALEN;
 volatile uint8_t SENDERID;
@@ -61,6 +61,7 @@ unsigned long millis_current;
 // freqBand must be selected from 315, 433, 868, 915
 void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
 {
+    printf("Beginning RFM69 init\n");
     const uint8_t CONFIG[][2] =
     {
         /* 0x01 */ { REG_OPMODE, RF_OPMODE_SEQUENCER_ON | RF_OPMODE_LISTEN_OFF | RF_OPMODE_STANDBY },
@@ -124,7 +125,7 @@ void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
     {
         writeReg(REG_SYNCVALUE1, 0x55);
     }
-
+    printf("Finished setting up SPI\n");
 	uint8_t i;
     for (i = 0; CONFIG[i][0] != 255; i++)
         writeReg(CONFIG[i][0], CONFIG[i][1]);
@@ -133,10 +134,18 @@ void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
     // Disable it during initialization so we always start from a known state.
     encrypt(0);
     setMode(RF69_MODE_STANDBY);
+
+printf("Config written, Setting standby mode\n");
     while ((readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00);
-    
+    #ifdef EXTERNAL_INTERRUPT
     EICRn |= (1<<ISCn1)|(1<<ISCn0); // setting INTn rising. details datasheet p91. must change with interrupt pin.
     EIMSK |= 1<<INTn;               // enable INTn
+
+    #elif defined(PIN_CHANGE_INTERRUPT)
+    PCMSKn |= (1<<PCINTn);
+    PCICR |= (1<<PCIEn);
+    #endif
+    printf("Interrupt configured\n");
     inISR = 0;
     //sei();                        //not needed because sei() called in millis_init() :)
     millis_init();                  // to get miliseconds
@@ -144,6 +153,7 @@ void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
     address = nodeID;
     setAddress(address);            // setting this node id
     setNetwork(networkID);
+    printf("Finished RFM69 init after %d millis", millis());
 }
 
 // set this node's address
@@ -440,41 +450,45 @@ void unselect()
 ISR(INT_VECT)
 {
     inISR = 1;
-    if (mode == RF69_MODE_RX && (readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY))
-    {
-        setMode(RF69_MODE_STANDBY);
-        select();
-        spi_fast_shift(REG_FIFO & 0x7F);
-        PAYLOADLEN = spi_fast_shift(0);
-        if(PAYLOADLEN>66) PAYLOADLEN=66;
-        TARGETID = spi_fast_shift(0);
-        if(!(promiscuousMode || TARGETID == address || TARGETID == RF69_BROADCAST_ADDR) // match this node's address, or broadcast address or anything in promiscuous mode
-        || PAYLOADLEN < 3) // address situation could receive packets that are malformed and don't fit this libraries extra fields
+    #if defined(PIN_CHANGE_INTERRUPT)
+    if((INT_PIN & (1<<INT_PIN_n)))
+    #endif
+        if (mode == RF69_MODE_RX && (readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY))
         {
-            PAYLOADLEN = 0;
+            printf("Interrupt triggered");
+            setMode(RF69_MODE_STANDBY);
+            select();
+            spi_fast_shift(REG_FIFO & 0x7F);
+            PAYLOADLEN = spi_fast_shift(0);
+            if(PAYLOADLEN>66) PAYLOADLEN=66;
+            TARGETID = spi_fast_shift(0);
+            if(!(promiscuousMode || TARGETID == address || TARGETID == RF69_BROADCAST_ADDR) // match this node's address, or broadcast address or anything in promiscuous mode
+            || PAYLOADLEN < 3) // address situation could receive packets that are malformed and don't fit this libraries extra fields
+            {
+                PAYLOADLEN = 0;
+                unselect();
+                receiveBegin();
+                return;
+            }
+
+            DATALEN = PAYLOADLEN - 3;
+            SENDERID = spi_fast_shift(0);
+            uint8_t CTLbyte = spi_fast_shift(0);
+            CTLbyte = CTLbyte;
+
+            //ACK_RECEIVED = CTLbyte & RFM69_CTL_SENDACK; // extract ACK-received flag
+            //ACK_REQUESTED = CTLbyte & RFM69_CTL_REQACK; // extract ACK-requested flag
+            
+            //interruptHook(CTLbyte);                   // TWS: hook to derived class interrupt function
+            uint8_t i;
+            for (i = 0; i < DATALEN; i++)
+            {
+                DATA[i] = spi_fast_shift(0);
+            }
+            if (DATALEN < RF69_MAX_DATA_LEN) DATA[DATALEN] = 0; // add null at end of string
             unselect();
-            receiveBegin();
-            return;
+            setMode(RF69_MODE_RX);
         }
-
-        DATALEN = PAYLOADLEN - 3;
-        SENDERID = spi_fast_shift(0);
-        uint8_t CTLbyte = spi_fast_shift(0);
-		CTLbyte = CTLbyte;
-
-        //ACK_RECEIVED = CTLbyte & RFM69_CTL_SENDACK; // extract ACK-received flag
-        //ACK_REQUESTED = CTLbyte & RFM69_CTL_REQACK; // extract ACK-requested flag
-        
-        //interruptHook(CTLbyte);                   // TWS: hook to derived class interrupt function
-		uint8_t i;
-        for (i = 0; i < DATALEN; i++)
-        {
-            DATA[i] = spi_fast_shift(0);
-        }
-        if (DATALEN < RF69_MAX_DATA_LEN) DATA[DATALEN] = 0; // add null at end of string
-        unselect();
-        setMode(RF69_MODE_RX);
-    }
     RSSI = readRSSI(0);
     inISR = 0;
 }

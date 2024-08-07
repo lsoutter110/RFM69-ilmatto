@@ -1,11 +1,11 @@
-# RFM69-Library-AVR #
-Original library is written for arduino by [LowPowerLab](https://github.com/LowPowerLab/RFM69). This is C ported version for AVR microcontrollers.
-
-Tested on ATmega64, ATmega328, ATtiny84(as receiver).
+# RFM69-ilmatto #
+Original library is written for arduino by [LowPowerLab](https://github.com/LowPowerLab/RFM69). This is a C ported version for the Il Matto development board, and includes some utilies you may find useful (UART communication)
 
 </br>
 
 ## I/O pin connections: ##
+
+You should be using the breakout board supplied as part of the lab
 
 | RF Module | Microcontroller |
 | --------- | --------------- |
@@ -52,3 +52,13 @@ mainloop
     if receiveDone() then
         extract received data from DATA buffer
 ```
+
+## Utilities
+
+If you wish to use the UART pins on PD0 (RX) and PD1 (TX) for debugging and communication purposes, include "uart.h" in `main.c` and be sure to call `init_debug_uart0();` at the start of your program. After that you can use [printf](https://www.geeksforgeeks.org/printf-in-c/) and [scanf](https://www.geeksforgeeks.org/scanf-in-c/) to handle input and output.
+
+If you wish to get the system uptime in milliseconds, include "millis.h" in `main.c`. The millisecond counter is already initialised by the RFM69 subsystem, so no additional initialisation steps are needed. The system uptime can be returned from `millis();` as an unsigned long (uint32_t).
+
+
+## Note
+The millisecond timer occupies Timer 1 on the Il matto and thus it is unavailable for your program.

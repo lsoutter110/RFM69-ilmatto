@@ -45,7 +45,7 @@ void spi_init()
 
     SPSR = (1<<SPI2X);              // Double Clock Rate
     
-    // SCK frequency 4MHz with above parameters. Deails in datasheet
+    // SCK frequency 4MHz with above parameters. Details in datasheet
     
 }
 
