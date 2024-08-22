@@ -58,7 +58,7 @@
 #define INT_pin_num              0
 #define INT_PIN_n              PB0
 #define PIN_CHANGE_INTERRUPT
-#define PCINTn PCINT7
+#define PCINTn PCINT8
 #define PCMSKn PCMSK1
 #define PCIEn PCIE1
 #define INT_VECT         PCINT1_vect

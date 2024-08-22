@@ -61,7 +61,6 @@ unsigned long millis_current;
 // freqBand must be selected from 315, 433, 868, 915
 void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
 {
-    printf("Beginning RFM69 init\n");
     const uint8_t CONFIG[][2] =
     {
         /* 0x01 */ { REG_OPMODE, RF_OPMODE_SEQUENCER_ON | RF_OPMODE_LISTEN_OFF | RF_OPMODE_STANDBY },
@@ -125,7 +124,6 @@ void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
     {
         writeReg(REG_SYNCVALUE1, 0x55);
     }
-    printf("Finished setting up SPI\n");
 	uint8_t i;
     for (i = 0; CONFIG[i][0] != 255; i++)
         writeReg(CONFIG[i][0], CONFIG[i][1]);
@@ -135,7 +133,6 @@ void rfm69_init(uint16_t freqBand, uint8_t nodeID, uint8_t networkID)
     encrypt(0);
     setMode(RF69_MODE_STANDBY);
 
-printf("Config written, Setting standby mode\n");
     while ((readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00);
     #ifdef EXTERNAL_INTERRUPT
     EICRn |= (1<<ISCn1)|(1<<ISCn0); // setting INTn rising. details datasheet p91. must change with interrupt pin.
@@ -145,15 +142,11 @@ printf("Config written, Setting standby mode\n");
     PCMSKn |= (1<<PCINTn);
     PCICR |= (1<<PCIEn);
     #endif
-    printf("Interrupt configured\n");
     inISR = 0;
-    //sei();                        //not needed because sei() called in millis_init() :)
-    millis_init();                  // to get miliseconds
-
     address = nodeID;
     setAddress(address);            // setting this node id
     setNetwork(networkID);
-    printf("Finished RFM69 init after %d millis", millis());
+    sei();
 }
 
 // set this node's address
@@ -429,7 +422,7 @@ void promiscuous(uint8_t onOff)
 // Only reenable interrupts if we're not being called from the ISR
 void maybeInterrupts()
 {
-    if (!inISR) sei();
+    if (!inISR) {sei();}
 }
 
 // Enable SPI transfer
@@ -450,12 +443,8 @@ void unselect()
 ISR(INT_VECT)
 {
     inISR = 1;
-    #if defined(PIN_CHANGE_INTERRUPT)
-    if((INT_PIN & (1<<INT_PIN_n)))
-    #endif
-        if (mode == RF69_MODE_RX && (readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY))
+    if (mode == RF69_MODE_RX && (readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY))
         {
-            printf("Interrupt triggered");
             setMode(RF69_MODE_STANDBY);
             select();
             spi_fast_shift(REG_FIFO & 0x7F);
@@ -491,4 +480,5 @@ ISR(INT_VECT)
         }
     RSSI = readRSSI(0);
     inISR = 0;
+    
 }
