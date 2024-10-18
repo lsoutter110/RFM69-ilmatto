@@ -52,6 +52,7 @@ volatile uint8_t ACK_RECEIVED;             // should be polled immediately after
 volatile int16_t RSSI;                     // most accurate RSSI during reception (closest to the reception)
 volatile uint8_t mode = RF69_MODE_STANDBY; // should be protected?
 volatile uint8_t inISR = 0; 
+volatile uint8_t DATA[RF69_MAX_DATA_LEN+1];  // RX/TX payload buffer, including end of string NULL char
 uint8_t isRFM69HW = 1;                     // if RFM69HW model matches high power enable possible
 uint8_t address;                           //nodeID
 uint8_t powerLevel = 31;
