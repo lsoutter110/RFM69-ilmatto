@@ -381,6 +381,7 @@ uint8_t receiveDone()
     if (mode == RF69_MODE_RX && PAYLOADLEN > 0)
     {
         setMode(RF69_MODE_STANDBY); // enables interrupts
+        sei();
         return 1;
     }
     else if (mode == RF69_MODE_RX) // already in RX no payload yet
